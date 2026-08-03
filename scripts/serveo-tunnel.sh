@@ -13,6 +13,9 @@ LOCAL_PORT="${1:-8080}"
 LOG_FILE="${TUNNEL_LOG:-/tmp/serveo-tunnel.log}"
 PID_FILE="${TUNNEL_PID:-/tmp/serveo-tunnel.pid}"
 PROXY="${http_proxy:-http://127.0.0.1:18080}"
+# Strip http:// or https:// prefix for nc -x which expects host:port only
+PROXY="${PROXY#http://}"
+PROXY="${PROXY#https://}"
 
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "$LOG_FILE"
