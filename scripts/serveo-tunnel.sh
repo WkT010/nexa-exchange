@@ -13,6 +13,10 @@ LOCAL_PORT="${1:-8080}"
 LOG_FILE="${TUNNEL_LOG:-/tmp/serveo-tunnel.log}"
 PID_FILE="${TUNNEL_PID:-/tmp/serveo-tunnel.pid}"
 PROXY="${http_proxy:-http://127.0.0.1:18080}"
+# nc -x expects host:port without scheme
+PROXY_HOSTPORT="${PROXY#http://}"
+PROXY_HOSTPORT="${PROXY_HOSTPORT#https://}"
+PROXY_HOSTPORT="${PROXY_HOSTPORT%%/*}"
 
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "$LOG_FILE"
@@ -37,7 +41,7 @@ start_tunnel() {
         -o ServerAliveInterval=60 \
         -o ServerAliveCountMax=3 \
         -o ExitOnForwardFailure=yes \
-        -o ProxyCommand="nc -X connect -x $PROXY %h %p" \
+        -o ProxyCommand="nc -X connect -x $PROXY_HOSTPORT %h %p" \
         -R 80:localhost:"$LOCAL_PORT" \
         serveo.net > "$LOG_FILE" 2>&1 &
     local pid=$!
