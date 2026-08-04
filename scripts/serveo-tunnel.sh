@@ -12,7 +12,19 @@ set -uo pipefail
 LOCAL_PORT="${1:-8080}"
 LOG_FILE="${TUNNEL_LOG:-/tmp/serveo-tunnel.log}"
 PID_FILE="${TUNNEL_PID:-/tmp/serveo-tunnel.pid}"
-PROXY="${http_proxy:-http://127.0.0.1:18080}"
+
+# Normalize proxy: strip http:// or https:// prefix for nc compatibility
+PROXY_RAW="${http_proxy:-http://127.0.0.1:18080}"
+PROXY="${PROXY_RAW#http://}"
+PROXY="${PROXY#https://}"
+
+# Create ProxyCommand helper script
+PROXY_CMD="/tmp/serveo-proxy-cmd.sh"
+cat > "$PROXY_CMD" << EOF
+#!/bin/bash
+exec nc -X connect -x $PROXY "\$1" "\$2"
+EOF
+chmod +x "$PROXY_CMD"
 
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "$LOG_FILE"
@@ -37,7 +49,7 @@ start_tunnel() {
         -o ServerAliveInterval=60 \
         -o ServerAliveCountMax=3 \
         -o ExitOnForwardFailure=yes \
-        -o ProxyCommand="nc -X connect -x $PROXY %h %p" \
+        -o "ProxyCommand=$PROXY_CMD %h %p" \
         -R 80:localhost:"$LOCAL_PORT" \
         serveo.net > "$LOG_FILE" 2>&1 &
     local pid=$!
