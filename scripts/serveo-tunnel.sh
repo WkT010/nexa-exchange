@@ -12,7 +12,9 @@ set -uo pipefail
 LOCAL_PORT="${1:-8080}"
 LOG_FILE="${TUNNEL_LOG:-/tmp/serveo-tunnel.log}"
 PID_FILE="${TUNNEL_PID:-/tmp/serveo-tunnel.pid}"
-PROXY="${http_proxy:-http://127.0.0.1:18080}"
+# nc -x expects host:port, not http://host:port; strip scheme prefix if present
+PROXY_RAW="${http_proxy:-http://127.0.0.1:18080}"
+PROXY="$(echo "$PROXY_RAW" | sed 's|^http[s]*://||')"
 
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "$LOG_FILE"
